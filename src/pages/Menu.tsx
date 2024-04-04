@@ -2,6 +2,24 @@ import { Button } from "@shadcn/ui/button"
 import { SendHorizontal, Users } from "lucide-react"
 import { useState } from "react"
 
+type PiecesColor = 'white' | 'black' | 'random';
+interface MenuSelectColorProps {
+  onSelect?: ((color: PiecesColor) => void)
+}
+function MenuSelectColor({ onSelect }: MenuSelectColorProps) {
+  const _onSelect = (color: PiecesColor) => {
+    if (onSelect) {
+      onSelect(color);
+    }
+  }
+  return (
+    <div className="grid grid-flow-col auto-cols-auto gap-3">
+      <div><Button onClick={() => _onSelect("white")}>White</Button></div>
+      <div><Button onClick={() => _onSelect("black")}>Black</Button></div>
+      <div><Button onClick={() => _onSelect("random")}>Random</Button></div>
+    </div>
+  );
+}
 export default function Menu() {
   const [selectedOption, setSelectedOption] = useState<'new' | 'join' | null>(null);
   return (
@@ -29,7 +47,7 @@ export default function Menu() {
             </div>
           </>
           }
-          {selectedOption === "new" && <div>New game?</div>}
+          {selectedOption === "new" && <div><MenuSelectColor onSelect={(color) => console.log(color)} /></div>}
           {selectedOption === "join" && <div>Join game?</div>}
         </div>
       </div>
