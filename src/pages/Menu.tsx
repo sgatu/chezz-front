@@ -1,6 +1,7 @@
 import { Button } from "@shadcn/ui/button"
 import { SendHorizontal, Users } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useDispatch } from "react-redux";
 
 type PiecesColor = 'white' | 'black' | 'random';
 interface MenuSelectColorProps {
@@ -22,6 +23,16 @@ function MenuSelectColor({ onSelect }: MenuSelectColorProps) {
 }
 export default function Menu() {
   const [selectedOption, setSelectedOption] = useState<'new' | 'join' | null>(null);
+  const selectedOptionRef = useRef<'new' | 'join' | null>(null);
+  selectedOptionRef.current = selectedOption;
+  useEffect(() => {
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'Escape' && selectedOptionRef.current !== null) {
+        setSelectedOption(null);
+      }
+    });
+  }, [])
+  const dispatch = useDispatch();
   return (
     <>
       <div className="flex items-center min-h-screen">
