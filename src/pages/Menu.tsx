@@ -1,18 +1,22 @@
+import { getGame } from "@/reducers/gameReducer";
 import { Button } from "@shadcn/ui/button"
 import { SendHorizontal, Users } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useDispatch } from "react-redux";
 
 type PiecesColor = 'white' | 'black' | 'random';
+type GameOptions = 'new' | 'join';
 interface MenuSelectColorProps {
   onSelect?: ((color: PiecesColor) => void)
 }
+
 function MenuSelectColor({ onSelect }: MenuSelectColorProps) {
   const _onSelect = (color: PiecesColor) => {
     if (onSelect) {
       onSelect(color);
     }
   }
+
   return (
     <div className="grid grid-flow-col auto-cols-auto gap-3">
       <div><Button onClick={() => _onSelect("white")}>White</Button></div>
@@ -23,7 +27,8 @@ function MenuSelectColor({ onSelect }: MenuSelectColorProps) {
 }
 export default function Menu() {
   const [selectedOption, setSelectedOption] = useState<'new' | 'join' | null>(null);
-  const selectedOptionRef = useRef<'new' | 'join' | null>(null);
+  const selectedOptionRef = useRef<GameOptions | null>(null);
+  const dispatch = useDispatch();
   selectedOptionRef.current = selectedOption;
   useEffect(() => {
     document.addEventListener('keyup', (e) => {
@@ -31,8 +36,11 @@ export default function Menu() {
         setSelectedOption(null);
       }
     });
-  }, [])
-  const dispatch = useDispatch();
+  }, []);
+  const updateOption = (option: GameOptions | null) => {
+    setSelectedOption(option);
+    dispatch(getGame("5555"));
+  }
   return (
     <>
       <div className="flex items-center min-h-screen">
@@ -41,7 +49,7 @@ export default function Menu() {
             <div style={{ marginBottom: 10 }}>
               <Button
                 className="flex justify-center items-center"
-                onClick={() => setSelectedOption("new")}
+                onClick={() => updateOption("new")}
                 style={{ minWidth: 150 }}
               >
                 <SendHorizontal width={20} style={{ marginRight: 10 }} /> New Game
@@ -50,7 +58,7 @@ export default function Menu() {
             <div>
               <Button
                 className="flex justify-center items-center"
-                onClick={() => setSelectedOption("join")}
+                onClick={() => updateOption("join")}
                 style={{ minWidth: 150 }}
               >
                 <Users width={20} style={{ marginRight: 10 }} /> Join Game

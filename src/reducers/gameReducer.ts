@@ -1,5 +1,12 @@
-import GameActionType, { GameActionKind } from "@/actions/gameActions";
 import GameModel from "@/lib/api/models/game";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+
+export const GAMESTORE = "game";
+export type GAMESTORE = typeof GAMESTORE;
+export const GET_GAME_BY_ID = `${GAMESTORE}/getGame`;
+export type GET_GAME_BY_ID = typeof GET_GAME_BY_ID;
+export const CREATE_GAME = `${GAMESTORE}/createGame`;
+export type CREATE_GAME = typeof CREATE_GAME;
 
 interface getGame {
   inProgress: boolean,
@@ -23,41 +30,38 @@ const initialState: gameState = {
   createGame: { inProgress: false, }
 }
 
-export default function(state: gameState = initialState, action: GameActionType): gameState {
-  switch (action.type) {
-    case GameActionKind.GET_GAME_ACTION:
-      return {
-        ...state,
-        getGame: { inProgress: true }
-      }
-    case GameActionKind.GET_GAME_ACTION_OK:
-      return {
-        ...state,
-        getGame: { ...state.getGame, inProgress: false, game: action.game, error: undefined }
-      }
-    case GameActionKind.GET_GAME_ACTION_KO:
-      return {
-        ...state,
-        getGame: { ...state.getGame, inProgress: false, game: undefined, error: action.error }
-      }
-    case GameActionKind.CREATE_GAME_ACTION:
-      return {
-        ...state,
-        createGame: { inProgress: true }
-      }
+const gameReducer = createSlice({
+  name: GAMESTORE,
+  initialState,
+  reducers: {
 
-    case GameActionKind.CREATE_GAME_ACTION_OK:
-      return {
-        ...state,
-        createGame: { inProgress: false, ok: true, error: undefined }
-      }
-    case GameActionKind.CREATE_GAME_ACTION_KO:
-      return {
-        ...state,
-        createGame: { inProgress: false, ok: false, error: action.error }
-      }
-    default:
-      return state;
-
+    getGame: (state, _payload: PayloadAction<string>) => {
+      state.getGame.inProgress = true;
+    },
+    getGameOk: (state, { payload: game }: PayloadAction<GameModel>) => {
+      state.getGame.game = game;
+      state.getGame.error = undefined;
+      state.getGame.inProgress = false;
+    },
+    getGameKo: (state, { payload: error }: PayloadAction<string>) => {
+      state.getGame.game = undefined;
+      state.getGame.inProgress = false;
+      state.getGame.error = error;
+    },
+    createGame: (state) => {
+      state.createGame.inProgress = true;
+    },
+    createGameOk: (state) => {
+      state.createGame.inProgress = false;
+      state.createGame.ok = true;
+      state.createGame.error = undefined;
+    },
+    createGameKo: (state, { payload: error }: PayloadAction<string>) => {
+      state.createGame.inProgress = false;
+      state.createGame.ok = false;
+      state.createGame.error = error;
+    }
   }
-}
+});
+export const { getGame, getGameOk, getGameKo, createGame, createGameOk, createGameKo } = gameReducer.actions;
+export default gameReducer;
