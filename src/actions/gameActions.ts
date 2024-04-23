@@ -7,7 +7,7 @@ export enum GameActionKind {
   CREATE_GAME_ACTION,
   CREATE_GAME_ACTION_OK,
   CREATE_GAME_ACTION_KO,
-};
+}
 
 export interface GetGameAction {
   type: GameActionKind.GET_GAME_ACTION,

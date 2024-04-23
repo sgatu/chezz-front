@@ -1,17 +1,17 @@
-import { getGame } from "@/reducers/gameReducer";
+import { createGame, getGame } from "@/reducers/gameReducer";
+import { ChosenColor, RootState } from "@/types";
 import { Button } from "@shadcn/ui/button"
 import { SendHorizontal, Users } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
-type PiecesColor = 'white' | 'black' | 'random';
 type GameOptions = 'new' | 'join';
-interface MenuSelectColorProps {
-  onSelect?: ((color: PiecesColor) => void)
-}
 
+interface MenuSelectColorProps {
+  onSelect?: ((color: ChosenColor) => void)
+}
 function MenuSelectColor({ onSelect }: MenuSelectColorProps) {
-  const _onSelect = (color: PiecesColor) => {
+  const _onSelect = (color: ChosenColor) => {
     if (onSelect) {
       onSelect(color);
     }
@@ -26,9 +26,10 @@ function MenuSelectColor({ onSelect }: MenuSelectColorProps) {
   );
 }
 export default function Menu() {
+  const dispatch = useDispatch();
+  const createGameStatus = useSelector<RootState>((state) => state.game.createGame);
   const [selectedOption, setSelectedOption] = useState<'new' | 'join' | null>(null);
   const selectedOptionRef = useRef<GameOptions | null>(null);
-  const dispatch = useDispatch();
   selectedOptionRef.current = selectedOption;
   useEffect(() => {
     document.addEventListener('keyup', (e) => {
@@ -37,6 +38,12 @@ export default function Menu() {
       }
     });
   }, []);
+  useEffect(() => {
+    console.log(createGameStatus);
+  }, [createGameStatus]);
+  const onNewGameSelectColor = (color: ChosenColor) => {
+    dispatch(createGame(color))
+  }
   const updateOption = (option: GameOptions | null) => {
     setSelectedOption(option);
     dispatch(getGame("5555"));
@@ -66,7 +73,7 @@ export default function Menu() {
             </div>
           </>
           }
-          {selectedOption === "new" && <div><MenuSelectColor onSelect={(color) => console.log(color)} /></div>}
+          {selectedOption === "new" && <div><MenuSelectColor onSelect={(color) => onNewGameSelectColor(color)} /></div>}
           {selectedOption === "join" && <div>Join game?</div>}
         </div>
       </div>
