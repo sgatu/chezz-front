@@ -1,4 +1,8 @@
 import { combineSlices } from '@reduxjs/toolkit';
-import gameReducer from './gameReducer';
+import gameReducer, { gameState } from './gameReducer';
+
+export interface RootStateType {
+  game: gameState
+}
 
 export default combineSlices(gameReducer);

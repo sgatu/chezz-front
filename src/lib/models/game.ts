@@ -1,6 +1,6 @@
 type relation = 'observer' | 'black' | 'white';
 
-enum PieceType {
+export enum PieceType {
   UNKNOWN,
   PAWN,
   BISHOP,
@@ -10,7 +10,7 @@ enum PieceType {
   KING
 }
 
-enum Player {
+export enum Player {
   WHITE_PLAYER,
   BLACK_PLAYER,
   UNKNOWN_PLAYER

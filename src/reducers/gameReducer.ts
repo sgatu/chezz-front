@@ -1,15 +1,27 @@
-import GameModel from "@/lib/api/models/game";
-import { ChosenColor, gameState } from "@/types";
+import Game from "@/lib/models/game";
+import { ChosenColor } from "@/types";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-export const GAMESTORE = "game";
-export type GAMESTORE = typeof GAMESTORE;
-export const GET_GAME_BY_ID = `${GAMESTORE}/getGame`;
-export type GET_GAME_BY_ID = typeof GET_GAME_BY_ID;
-export const CREATE_GAME = `${GAMESTORE}/createGame`;
-export type CREATE_GAME = typeof CREATE_GAME;
-export const CREATE_GAME_OK = `${GAMESTORE}/createGameOk`;
-export type CREATE_GAME_OK = typeof CREATE_GAME_OK;
+const GAMESTORE = "game";
+
+export interface GetGameStatus {
+  inProgress: boolean,
+  game?: Game,
+  error?: string,
+}
+
+export interface CreateGameStatus {
+  inProgress: boolean
+  gameId?: string,
+  error?: string
+}
+
+export interface gameState {
+  getGame: GetGameStatus,
+  createGame: CreateGameStatus,
+}
+
+
 
 const initialState: gameState = {
   getGame: { inProgress: false, },
@@ -24,7 +36,7 @@ const gameReducer = createSlice({
     getGame: (state, _payload: PayloadAction<string>) => {
       state.getGame.inProgress = true;
     },
-    getGameOk: (state, { payload: game }: PayloadAction<GameModel>) => {
+    getGameOk: (state, { payload: game }: PayloadAction<Game>) => {
       state.getGame.game = game;
       state.getGame.error = undefined;
       state.getGame.inProgress = false;
