@@ -1,61 +1,63 @@
 import Game, { Piece, PieceType, Player } from "@/lib/models/game";
+import { PlayerGameRelation, ServerMove, pieceTypeToChar } from "@/types";
 import clsx from "clsx";
 import { Ref, forwardRef, useImperativeHandle, useRef, useState } from "react";
 import Draggable, { DraggableData } from "react-draggable";
 
 export interface GameTableProps {
   initialGameState: Game,
+  gameRelation: PlayerGameRelation,
   onMove?: (move: string) => void,
+  onGameUpdate?: (updatedGame: Game) => void,
 }
 export type GameTableHandlers = {
-  processMove: (move: string) => void
+  processMove: (move: ServerMove) => void
 }
-function GameTableComponent({ initialGameState, onMove }: GameTableProps, ref: Ref<GameTableHandlers>) {
+
+
+function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpdate }: GameTableProps, ref: Ref<GameTableHandlers>) {
 
   const [gameState, setGameState] = useState<Game>(initialGameState);
-
-  const processMove = (move: string) => {
+  const processMove = (move: ServerMove) => {
     const tableStatus = gameState.gameStatus.table;
-    const initIndex = getIndexFromCoords(move.substring(0, 2));
-    const endIndex = getIndexFromCoords(move.substring(2, 4));
+    const initIndex = getIndexFromCoords(move.uci.substring(0, 2));
+    const endIndex = getIndexFromCoords(move.uci.substring(2, 4));
     const newTableStatus = [...tableStatus];
+    const capturedPieces = [...gameState.gameStatus.outTable];
+    let hasCapturedPiece = false;
+    if (newTableStatus[endIndex] !== null) {
+      capturedPieces.push(newTableStatus[endIndex] as Piece);
+      hasCapturedPiece = true;
+    }
     newTableStatus[endIndex] = newTableStatus[initIndex];
     newTableStatus[initIndex] = null;
-    setGameState(
-      {
-        ...gameState,
-        gameStatus: {
-          ...gameState.gameStatus,
-          table: newTableStatus,
-          moves: [move, ...gameState.gameStatus.moves]
-        }
+    const newGameState = {
+      ...gameState,
+      gameStatus: {
+        ...gameState.gameStatus,
+        table: newTableStatus,
+        moves: [move.uci, ...gameState.gameStatus.moves],
+        checkedPlayer: move.checkedPlayer,
+        checkMate: move.isMate,
+        playerTurn: ((gameState.gameStatus.moves.length + 1) % 2) as Player,
+        outTable: hasCapturedPiece ? capturedPieces : gameState.gameStatus.outTable
+
       }
-    );
-  }
-
-  useImperativeHandle(ref, () => ({
-    processMove: processMove
-  }));
-
-  const pieceTypeToC = (pType: PieceType): string => {
-    switch (pType) {
-      case PieceType.KING:
-        return "K";
-      case PieceType.PAWN:
-        return "P";
-      case PieceType.ROOK:
-        return "R";
-      case PieceType.QUEEN:
-        return "Q";
-      case PieceType.BISHOP:
-        return "B"
-      case PieceType.KNIGHT:
-        return "N";
-      case PieceType.UNKNOWN:
-        return "U";
+    };
+    setGameState(newGameState);
+    if (onGameUpdate) {
+      onGameUpdate(newGameState);
     }
   }
 
+  useImperativeHandle(ref, () => ({
+    processMove: processMove,
+  }));
+  const isDraggable = (pieceOwner: Player): boolean => {
+    return gameRelation !== "observer" &&
+      (pieceOwner === Player.BLACK_PLAYER && gameRelation === "black" && gameState.gameStatus.playerTurn === Player.BLACK_PLAYER) ||
+      (pieceOwner === Player.WHITE_PLAYER && gameRelation === "white" && gameState.gameStatus.playerTurn === Player.WHITE_PLAYER);
+  }
   const getNumeration = (): React.JSX.Element[] => {
 
     let i = 8;
@@ -138,6 +140,7 @@ function GameTableComponent({ initialGameState, onMove }: GameTableProps, ref: R
     const posLetter: string = ["a", "b", "c", "d", "e", "f", "g", "h"].at(index % 8) ?? "";
     return posLetter + posNum;
   }
+
   const getIndexFromCoords = (coords: string): number => {
     const letter = coords[0];
     const number = coords[1];
@@ -150,7 +153,7 @@ function GameTableComponent({ initialGameState, onMove }: GameTableProps, ref: R
   }
   return (
     <>
-      <div className="flex w-full flex-row">
+      <div className="flex w-full flex-row select-none">
         <div className="m-2 w-2 flex flex-col text-white">
           {getNumeration()}
         </div>
@@ -159,6 +162,7 @@ function GameTableComponent({ initialGameState, onMove }: GameTableProps, ref: R
 
             const coords = getCoordsFromIndex(i);
             const border = (isPieceChecked(p) ? "border-rose-500 border-2" : (focusedPosition === coords ? "border-sky-500 border-2" : "border"));
+
             return <div className="h-14 w-14" key={`table-square-${i}`} data-coord={coords}>
               {p === null ? <div className={clsx("h-full", "w-full", border, "divide-solid",
                 ((i % 2) === ((Math.floor(i / 8.0) % 2 === 0) ? 1 : 0) ? "bg-[#739756]" : "bg-[#ECEFD1]"),
@@ -176,21 +180,26 @@ function GameTableComponent({ initialGameState, onMove }: GameTableProps, ref: R
                       p?.player === Player.BLACK_PLAYER ? "text-black" : "text-white text-shadow-around"
                     )}
                 >
-                  <Draggable onStop={(_e, d) => { onMoveStop(d); }} onDrag={(_e, d) => onDrag(d)}>
-                    <div className="w-full h-full cursor-pointer">
-                      <div className="m-auto">{pieceTypeToC(p.pieceType)}</div>
-                    </div>
-                  </Draggable>
+                  {
+                    isDraggable(p.player) ?
+                      <Draggable onStop={(_e, d) => { onMoveStop(d); }} onDrag={(_e, d) => onDrag(d)}>
+                        <div className="w-full h-full cursor-pointer">
+                          <div className="m-auto">{pieceTypeToChar(p.pieceType)}</div>
+                        </div>
+                      </Draggable> :
+                      <div className="w-full h-full cursor-default">
+                        <div className="m-auto">{pieceTypeToChar(p.pieceType)}</div>
+                      </div>
+                  }
                 </div>
               }
             </div>
           })}
         </div>
       </div>
-      <div className="flex w-full flex-row pl-inherit text-white">
+      <div className="flex w-full flex-row text-white pl-8 select-none">
         {getLetters()}
       </div>
-      <div>TURN <div className={clsx("inline-block w-8 h-8", gameState.gameStatus.moves.length % 2 === 0 ? "bg-white" : "bg-black")}></div></div>
     </>
   );
 }
