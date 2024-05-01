@@ -25,7 +25,9 @@ export default class Api {
   }
 
   public async getGame(gameId: string): Promise<Game> {
-    const result = await fetch(urlJoin(this.baseUrl, 'game', gameId));
+    const result = await fetch(urlJoin(this.baseUrl, 'game', gameId), {
+      credentials: 'include'
+    });
     if (!result.ok) {
       await this.processError(result);
     }
@@ -43,7 +45,7 @@ export default class Api {
     }
     const result = await fetch(
       urlJoin(this.baseUrl, `game?is_black=${isBlack}`),
-      { method: 'POST' }
+      { method: 'POST', credentials: 'include' }
     );
     if (!result.ok) {
       await this.processError(result);
