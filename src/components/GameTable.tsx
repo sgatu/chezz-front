@@ -1,8 +1,10 @@
 import Game, { Piece, PieceType, Player } from "@/lib/models/game";
-import { PlayerGameRelation, ServerMove, pieceTypeToChar } from "@/types";
+import { PlayerGameRelation, ServerMove, charToPieceType, pieceTypeToChar } from "@/types";
 import clsx from "clsx";
 import { Ref, forwardRef, useImperativeHandle, useRef, useState } from "react";
 import Draggable, { DraggableData } from "react-draggable";
+import Popover from "./Popover";
+import SelectPromotion from "./SelectPromotion";
 
 export interface GameTableProps {
   initialGameState: Game,
@@ -18,10 +20,18 @@ export type GameTableHandlers = {
 function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpdate }: GameTableProps, ref: Ref<GameTableHandlers>) {
 
   const [gameState, setGameState] = useState<Game>(initialGameState);
+  const [popoverInfo, setPopoverInfo] = useState<{ open: boolean, pos: { x: number, y: number } }>({
+    open: false,
+    pos: { x: 0, y: 0 },
+  });
+  const [lastMove, setLastMove] = useState<string | null>(null);
+
   const processMove = (move: ServerMove) => {
     const tableStatus = gameState.gameStatus.table;
     const initIndex = getIndexFromCoords(move.uci.substring(0, 2));
     const endIndex = getIndexFromCoords(move.uci.substring(2, 4));
+    const promotion = move.uci.length === 5 && ["Q", "R", "B", "N"].includes(move.uci[4].toUpperCase()) ?
+      move.uci[4].toUpperCase() : null;
     const newTableStatus = [...tableStatus];
     const capturedPieces = [...gameState.gameStatus.outTable];
     let hasCapturedPiece = false;
@@ -30,6 +40,9 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
       hasCapturedPiece = true;
     }
     newTableStatus[endIndex] = newTableStatus[initIndex];
+    if (promotion && newTableStatus[endIndex]) {
+      newTableStatus[endIndex]!.pieceType = charToPieceType(promotion);
+    }
     newTableStatus[initIndex] = null;
     const newGameState = {
       ...gameState,
@@ -93,7 +106,7 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
     const area = Math.max(0, (endX - startX)) * Math.max(0, (endY - startY));
     return area;
   }
-  const getHoveredSquare = (e: DraggableData): HTMLElement | undefined => {
+  function getHoveredSquare(e: DraggableData): HTMLElement | undefined {
     const cells = tableRef.current?.childNodes ?? [];
     const dragBounds = e.node.getBoundingClientRect();
     let hoveredSquare: (HTMLElement | undefined);
@@ -108,20 +121,42 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
     });
     return hoveredSquare;
   }
-  const onMoveStop = (e: DraggableData) => {
+  function requiresPromotion(piece: Piece | null, endPosition: number): boolean {
+    return piece?.pieceType === PieceType.PAWN &&
+      ((piece?.player === Player.BLACK_PLAYER && endPosition >= 56) ||
+        (piece?.player === Player.WHITE_PLAYER && endPosition < 8));
+
+  }
+  function onMoveStop(e: DraggableData) {
     if (!tableRef.current) return;
     const hoveredSquare = getHoveredSquare(e);
     if (hoveredSquare) {
       const startPos = (e.node.parentNode?.parentNode as HTMLElement).getAttribute("data-coord") ?? "";
       const endPos = hoveredSquare.getAttribute("data-coord") ?? "";
-      if (onMove && startPos !== endPos) {
+      if (startPos === endPos)
+        return;
+      setLastMove(startPos + endPos);
+      const initIndex = getIndexFromCoords(startPos);
+      const endIndex = getIndexFromCoords(endPos);
+      const initPiece = gameState.gameStatus.table[initIndex];
+      if (requiresPromotion(initPiece, endIndex)) {
+        setPopoverInfo({
+          open: true,
+          pos: {
+            x: hoveredSquare.getBoundingClientRect().left,
+            y: hoveredSquare.getBoundingClientRect().top
+          }
+        });
+        return;
+      }
+      if (onMove) {
         onMove(startPos + endPos);
       }
     }
     setTableKey(Math.random() + "");
     setFocusedPosition(null);
   }
-  const onDrag = (e: DraggableData) => {
+  function onDrag(e: DraggableData) {
     if (!tableRef.current) return;
     const hoveredSquare = getHoveredSquare(e);
     if (hoveredSquare) {
@@ -200,6 +235,12 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
       <div className="flex w-full flex-row text-white pl-8 select-none">
         {getLetters()}
       </div>
+      <Popover open={popoverInfo.open} pos={popoverInfo.pos}><SelectPromotion onSelectPromo={(promoInfo) => {
+        setPopoverInfo({ ...popoverInfo, open: false });
+        if (onMove) {
+          onMove(lastMove + promoInfo.char);
+        }
+      }} /></Popover>
     </>
   );
 }

@@ -50,7 +50,7 @@ export function parseServerMessage(json: string): ServerMessage | null {
   return null
 }
 
-export const pieceTypeToChar = (pType: PieceType): string => {
+export function pieceTypeToChar(pType: PieceType): string {
   switch (pType) {
     case PieceType.KING:
       return "K";
@@ -66,6 +66,24 @@ export const pieceTypeToChar = (pType: PieceType): string => {
       return "N";
     case PieceType.UNKNOWN:
       return "U";
+  }
+}
+export function charToPieceType(c: string): PieceType {
+  switch (c) {
+    case "K":
+      return PieceType.KING;
+    case "P":
+      return PieceType.PAWN;
+    case "Q":
+      return PieceType.QUEEN;
+    case "R":
+      return PieceType.ROOK;
+    case "B":
+      return PieceType.BISHOP;
+    case "N":
+      return PieceType.KNIGHT;
+    default:
+      return PieceType.UNKNOWN;
   }
 }
 

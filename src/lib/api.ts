@@ -5,11 +5,16 @@ import { ChosenColor } from "@/types/index.ts";
 
 export default class Api {
   private baseUrl: string;
+  // private sessionId: string;
   public constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+    // this.sessionId = this.newSessionId();
   }
 
-
+  /*  private newSessionId() {
+      return [...Array(30)].map(() => Math.random().toString(36)[2]).join('');
+    }
+  */
   private base64ToArrayBuffer(base64: string): Uint8Array {
     const binaryString = atob(base64);
     const bytes = new Uint8Array(binaryString.length);

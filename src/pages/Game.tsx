@@ -22,20 +22,26 @@ export default function Game() {
   const [gameRelation, setGameRelation] = useState<PlayerGameRelation>("observer");
   const socket: WebSocketHook = useWebSocket(wsUrl);
   const { toast } = useToast();
+  const singleRequestRef = useRef(false); // used to avoid double api call on strictMode
+
   const onTableMove = (move: string) => {
     socket.sendMessage(move, false);
   }
+
   useEffect(() => {
-    if (params.id) {
+    if (params.id && !singleRequestRef.current) {
+      singleRequestRef.current = true;
       dispatch(getGame(params.id));
     }
   }, [dispatch, params.id]);
+
   useEffect(() => {
     if (getGameStatus.game?.id) {
       setWsUrl("ws://localhost:8888/play/" + getGameStatus.game?.id)
       setCurrentGame(getGameStatus.game)
     }
   }, [getGameStatus]);
+
   useEffect(() => {
     if (socket.lastMessage?.data) {
       const message = parseServerMessage(socket.lastMessage?.data);
@@ -59,6 +65,7 @@ export default function Game() {
       }
     }
   }, [socket.lastMessage, toast]);
+
   return (
     <>
       {getGameStatus.inProgress && <LoadingSpinner size={64} />}
@@ -70,7 +77,7 @@ export default function Game() {
               <hr className="mb-5" />
               <div className="flex items-center">
                 <div className="basis-3/4 mr-2">Your color</div>
-                <div className={clsx("basis-auto rounded-full w-5 h-5 border-2 border-slate-400", gameRelation === "black" ? "bg-black" : "bg-white")}></div>
+                <div className={clsx("basis-auto rounded-full w-5 h-5 border-2 border-slate-400", gameRelation === "black" ? "bg-black" : gameRelation === "white" ? "bg-white" : "bg-gray")}></div>
               </div>
               <div className="flex items-center">
                 <div className="basis-3/4 mr-2">Player Turn</div>

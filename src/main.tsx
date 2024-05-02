@@ -7,10 +7,12 @@ import { Provider } from 'react-redux';
 import createSagaMiddleware from 'redux-saga'
 import sagas from '@/sagas';
 import Api from './lib/api.ts';
+
+const apiUrl = import.meta.env.PUB_API_BASE;
 const sagaMiddleware = createSagaMiddleware(
   {
     context: {
-      api: new Api("http://localhost:8888")
+      api: new Api(apiUrl)
     }
   }
 );
