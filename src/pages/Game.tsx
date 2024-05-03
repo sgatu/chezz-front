@@ -37,7 +37,7 @@ export default function Game() {
 
   useEffect(() => {
     if (getGameStatus.game?.id) {
-      setWsUrl(import.meta.env.API_BASE.replace("http://", "ws://").replace("https://", "wss://") + "/play/" + getGameStatus.game?.id)
+      setWsUrl(import.meta.env.PUB_API_BASE.replace("http://", "ws://").replace("https://", "wss://") + "/play/" + getGameStatus.game?.id)
       setCurrentGame(getGameStatus.game)
     }
   }, [getGameStatus]);
