@@ -25,25 +25,71 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
     pos: { x: 0, y: 0 },
   });
   const [lastMove, setLastMove] = useState<string | null>(null);
-
-  const processMove = (move: ServerMove) => {
+  function isCastlingMovement(initIndex: number, endIndex: number): { isCastling: boolean, rookStart: number, rookEnd: number } {
+    const defaultResponse = {
+      rookStart: 0,
+      rookEnd: 0,
+      isCastling: false
+    };
+    if (gameState.gameStatus.table[initIndex] === null || gameState.gameStatus.table[initIndex]?.pieceType !== PieceType.KING)
+      return defaultResponse;
+    if (initIndex === 4 && endIndex === 2) {
+      return {
+        isCastling: true,
+        rookStart: 0,
+        rookEnd: 3
+      }
+    }
+    if (initIndex === 4 && endIndex === 6) {
+      return {
+        isCastling: true,
+        rookStart: 7,
+        rookEnd: 5
+      }
+    }
+    if (initIndex === 60 && endIndex === 62) {
+      return {
+        isCastling: true,
+        rookStart: 63,
+        rookEnd: 61
+      }
+    }
+    if (initIndex === 60 && endIndex === 58) {
+      return {
+        isCastling: true,
+        rookStart: 56,
+        rookEnd: 59
+      }
+    }
+    return defaultResponse;
+  }
+  function processMove(move: ServerMove) {
     const tableStatus = gameState.gameStatus.table;
     const initIndex = getIndexFromCoords(move.uci.substring(0, 2));
     const endIndex = getIndexFromCoords(move.uci.substring(2, 4));
-    const promotion = move.uci.length === 5 && ["Q", "R", "B", "N"].includes(move.uci[4].toUpperCase()) ?
-      move.uci[4].toUpperCase() : null;
+    const castling = isCastlingMovement(initIndex, endIndex);
     const newTableStatus = [...tableStatus];
-    const capturedPieces = [...gameState.gameStatus.outTable];
+    let capturedPieces = gameState.gameStatus.outTable;
     let hasCapturedPiece = false;
-    if (newTableStatus[endIndex] !== null) {
-      capturedPieces.push(newTableStatus[endIndex] as Piece);
-      hasCapturedPiece = true;
+    if (castling.isCastling) {
+      newTableStatus[endIndex] = newTableStatus[initIndex];
+      newTableStatus[initIndex] = null;
+      newTableStatus[castling.rookEnd] = newTableStatus[castling.rookStart]
+      newTableStatus[castling.rookStart] = null;
+    } else {
+      capturedPieces = [...gameState.gameStatus.outTable];
+      const promotion = move.uci.length === 5 && ["Q", "R", "B", "N"].includes(move.uci[4].toUpperCase()) ?
+        move.uci[4].toUpperCase() : null;
+      if (newTableStatus[endIndex] !== null) {
+        capturedPieces.push(newTableStatus[endIndex] as Piece);
+        hasCapturedPiece = true;
+      }
+      newTableStatus[endIndex] = newTableStatus[initIndex];
+      if (promotion && newTableStatus[endIndex]) {
+        newTableStatus[endIndex]!.pieceType = charToPieceType(promotion);
+      }
+      newTableStatus[initIndex] = null;
     }
-    newTableStatus[endIndex] = newTableStatus[initIndex];
-    if (promotion && newTableStatus[endIndex]) {
-      newTableStatus[endIndex]!.pieceType = charToPieceType(promotion);
-    }
-    newTableStatus[initIndex] = null;
     const newGameState = {
       ...gameState,
       gameStatus: {
@@ -53,8 +99,7 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
         checkedPlayer: move.checkedPlayer,
         checkMate: move.isMate,
         playerTurn: ((gameState.gameStatus.moves.length + 1) % 2) as Player,
-        outTable: hasCapturedPiece ? capturedPieces : gameState.gameStatus.outTable
-
+        outTable: hasCapturedPiece ? capturedPieces : gameState.gameStatus.outTable,
       }
     };
     setGameState(newGameState);

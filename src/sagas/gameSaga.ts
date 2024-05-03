@@ -10,6 +10,7 @@ function* getGameSaga({ payload: gameId }: PayloadAction<string>) {
   const gameApi: Api = yield getApi();
   try {
     const game: Game = yield call([gameApi, gameApi.getGame], gameId);
+    console.log(game);
     yield put(getGameOk(game));
   } catch (e) {
     let message: string = "Unknown error when creating game";

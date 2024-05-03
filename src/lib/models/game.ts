@@ -21,7 +21,12 @@ export type Piece = {
   pieceType: PieceType,
   hasBeenMoved: boolean,
 }
-
+export type CastleRights = {
+  blackQueenSide: boolean,
+  blackKingSide: boolean,
+  whiteQueenSide: boolean,
+  whiteKingSide: boolean
+}
 export class GameStatus {
   table: (Piece | null)[];
   moves: string[];
@@ -29,13 +34,15 @@ export class GameStatus {
   playerTurn: Player;
   checkMate: boolean;
   checkedPlayer: Player;
-  constructor(table: (Piece | null)[], outTable: Piece[], moves: string[], playerTurn: Player, checkMate: boolean, checkedPlayer: Player) {
+  castleRights: CastleRights;
+  constructor(table: (Piece | null)[], outTable: Piece[], moves: string[], playerTurn: Player, checkMate: boolean, checkedPlayer: Player, castleRights: CastleRights) {
     this.table = table;
     this.moves = moves;
     this.outTable = outTable;
     this.playerTurn = playerTurn;
     this.checkMate = checkMate;
     this.checkedPlayer = checkedPlayer;
+    this.castleRights = castleRights;
   }
   private static pieceFromByte(b: number): Piece | null {
     let player: Player = Player.WHITE_PLAYER;
@@ -83,6 +90,15 @@ export class GameStatus {
         return Player.UNKNOWN_PLAYER;
     }
   }
+  private static castleRightsFromByte(b: number): CastleRights {
+    return {
+      blackKingSide: ((b & 8) === 8),
+      blackQueenSide: ((b & 4) === 4),
+      whiteKingSide: ((b & 2) === 2),
+      whiteQueenSide: ((b & 1) === 1)
+    }
+  }
+
   public static fromSerialized(data: Uint8Array): GameStatus {
     const pieces: (Piece | null)[] = [];
     const outPieces: Piece[] = [];
@@ -90,6 +106,12 @@ export class GameStatus {
     let readingMoves = false;
     let checkedPlayer = Player.UNKNOWN_PLAYER;
     let isCheckMate = false;
+    let castleRights: CastleRights = {
+      blackKingSide: false,
+      blackQueenSide: false,
+      whiteQueenSide: false,
+      whiteKingSide: false
+    };
     const movementHistory: string[] = [];
     let startPos = -1;
     let endPos = -1;
@@ -106,9 +128,12 @@ export class GameStatus {
       if (i === 2) {
         isCheckMate = b === 1;
       }
+      if (i === 3) {
+        castleRights = this.castleRightsFromByte(b)
+      }
       //next 64 bytes are used to define the game table status
-      if (i < 67) {
-        pieces[i - 3] = b === 0 ? null : GameStatus.pieceFromByte(b);
+      if (i < 68) {
+        pieces[i - 4] = b === 0 ? null : GameStatus.pieceFromByte(b);
         return;
       }
       // next we'll have to read the pieces that are out of the table untill we find a 0 byte
@@ -137,7 +162,7 @@ export class GameStatus {
       }
       startPos = -1;
     });
-    return new GameStatus(pieces, outPieces, movementHistory, playerTurn, isCheckMate, checkedPlayer);
+    return new GameStatus(pieces, outPieces, movementHistory, playerTurn, isCheckMate, checkedPlayer, castleRights);
   }
 }
 
