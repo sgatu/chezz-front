@@ -1,4 +1,4 @@
-import GameTable, { GameTableHandlers } from "@/components/GameTable";
+import GameTable, { GameTableHandlers } from "@/components/gametable/GameTable";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/components/shadcn/ui/use-toast";
 import { default as GameType, Player } from "@/lib/models/game";

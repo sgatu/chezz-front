@@ -3,8 +3,9 @@ import { PlayerGameRelation, ServerMove, charToPieceType, pieceTypeToChar } from
 import clsx from "clsx";
 import { Ref, forwardRef, useImperativeHandle, useRef, useState } from "react";
 import Draggable, { DraggableData } from "react-draggable";
-import Popover from "./Popover";
+import Popover from "../Popover";
 import SelectPromotion from "./SelectPromotion";
+import { getHoveredSquare, isCastlingMovement, requiresPromotion } from "./GameTableUtils";
 
 export interface GameTableProps {
   initialGameState: Game,
@@ -25,49 +26,11 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
     pos: { x: 0, y: 0 },
   });
   const [lastMove, setLastMove] = useState<string | null>(null);
-  function isCastlingMovement(initIndex: number, endIndex: number): { isCastling: boolean, rookStart: number, rookEnd: number } {
-    const defaultResponse = {
-      rookStart: 0,
-      rookEnd: 0,
-      isCastling: false
-    };
-    if (gameState.gameStatus.table[initIndex] === null || gameState.gameStatus.table[initIndex]?.pieceType !== PieceType.KING)
-      return defaultResponse;
-    if (initIndex === 4 && endIndex === 2) {
-      return {
-        isCastling: true,
-        rookStart: 0,
-        rookEnd: 3
-      }
-    }
-    if (initIndex === 4 && endIndex === 6) {
-      return {
-        isCastling: true,
-        rookStart: 7,
-        rookEnd: 5
-      }
-    }
-    if (initIndex === 60 && endIndex === 62) {
-      return {
-        isCastling: true,
-        rookStart: 63,
-        rookEnd: 61
-      }
-    }
-    if (initIndex === 60 && endIndex === 58) {
-      return {
-        isCastling: true,
-        rookStart: 56,
-        rookEnd: 59
-      }
-    }
-    return defaultResponse;
-  }
   function processMove(move: ServerMove) {
     const tableStatus = gameState.gameStatus.table;
     const initIndex = getIndexFromCoords(move.uci.substring(0, 2));
     const endIndex = getIndexFromCoords(move.uci.substring(2, 4));
-    const castling = isCastlingMovement(initIndex, endIndex);
+    const castling = isCastlingMovement(gameState, initIndex, endIndex);
     const newTableStatus = [...tableStatus];
     let capturedPieces = gameState.gameStatus.outTable;
     let hasCapturedPiece = false;
@@ -111,13 +74,13 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
   useImperativeHandle(ref, () => ({
     processMove: processMove,
   }));
+
   const isDraggable = (pieceOwner: Player): boolean => {
     return gameRelation !== "observer" &&
       (pieceOwner === Player.BLACK_PLAYER && gameRelation === "black" && gameState.gameStatus.playerTurn === Player.BLACK_PLAYER) ||
       (pieceOwner === Player.WHITE_PLAYER && gameRelation === "white" && gameState.gameStatus.playerTurn === Player.WHITE_PLAYER);
   }
-  const getNumeration = (): React.JSX.Element[] => {
-
+  function getNumeration(): React.JSX.Element[] {
     let i = 8;
     const numbers = [];
     while (i > 0) {
@@ -126,7 +89,7 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
     }
     return numbers;
   }
-  const getLetters = (): React.JSX.Element[] => {
+  function getLetters(): React.JSX.Element[] {
     const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
     let i = 0;
     const lettersEls = [];
@@ -140,41 +103,10 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
   const tableRef = useRef<HTMLDivElement>(null);
   const [focusedPosition, setFocusedPosition] = useState<string | null>(null);
 
-  const calcSuperPosRectangle = (first: DOMRect, second: DOMRect): number => {
-
-    const startX = Math.max(first.x, second.x);
-    const endX = Math.min(first.x + first.width, second.x + second.width);
-
-    const startY = Math.max(first.y, second.y);
-    const endY = Math.min(first.y + first.height, second.y + second.height);
-
-    const area = Math.max(0, (endX - startX)) * Math.max(0, (endY - startY));
-    return area;
-  }
-  function getHoveredSquare(e: DraggableData): HTMLElement | undefined {
-    const cells = tableRef.current?.childNodes ?? [];
-    const dragBounds = e.node.getBoundingClientRect();
-    let hoveredSquare: (HTMLElement | undefined);
-    let biggestCollisionArea = 0;
-    cells.forEach(element => {
-      const squareBounds = (element as HTMLElement).getBoundingClientRect();
-      const collisionArea = calcSuperPosRectangle(dragBounds, squareBounds);
-      if (collisionArea > 10 && collisionArea > biggestCollisionArea) {
-        biggestCollisionArea = collisionArea;
-        hoveredSquare = (element as HTMLElement);
-      }
-    });
-    return hoveredSquare;
-  }
-  function requiresPromotion(piece: Piece | null, endPosition: number): boolean {
-    return piece?.pieceType === PieceType.PAWN &&
-      ((piece?.player === Player.BLACK_PLAYER && endPosition >= 56) ||
-        (piece?.player === Player.WHITE_PLAYER && endPosition < 8));
-
-  }
   function onMoveStop(e: DraggableData) {
     if (!tableRef.current) return;
-    const hoveredSquare = getHoveredSquare(e);
+    const cells = tableRef.current?.childNodes ?? [];
+    const hoveredSquare = getHoveredSquare(cells, e);
     if (hoveredSquare) {
       const startPos = (e.node.parentNode?.parentNode as HTMLElement).getAttribute("data-coord") ?? "";
       const endPos = hoveredSquare.getAttribute("data-coord") ?? "";
@@ -203,7 +135,8 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
   }
   function onDrag(e: DraggableData) {
     if (!tableRef.current) return;
-    const hoveredSquare = getHoveredSquare(e);
+    const cells = tableRef.current?.childNodes ?? [];
+    const hoveredSquare = getHoveredSquare(cells, e);
     if (hoveredSquare) {
       const startPos = (e.node.parentNode?.parentNode as HTMLElement).getAttribute("data-coord") ?? "";
       const endPos = hoveredSquare.getAttribute("data-coord") ?? "";
@@ -267,7 +200,7 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
                           <div className="m-auto">{pieceTypeToChar(p.pieceType)}</div>
                         </div>
                       </Draggable> :
-                      <div className="w-full h-full cursor-default">
+                      <div className="w-full h-full cursor-pointer">
                         <div className="m-auto">{pieceTypeToChar(p.pieceType)}</div>
                       </div>
                   }
