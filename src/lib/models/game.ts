@@ -11,7 +11,7 @@ export enum PieceType {
 }
 
 export enum Player {
-  WHITE_PLAYER = 0,
+  WHITE_PLAYER,
   BLACK_PLAYER,
   UNKNOWN_PLAYER
 }

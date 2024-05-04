@@ -1,32 +1,39 @@
 ![chessGame2](https://github.com/sgatu/chezz-front/assets/11692467/04406350-8231-445e-979e-e0f5ac07622e)
-# React
- + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Chezz Game Front-End
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+#### Front end for the chezz game found here [Chezz Back](https://github.com/sgatu/chezz-back)
 
-## Expanding the ESLint configuration
+## How to run?
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+This project is powered by Vite + React. Commands are as usual
 
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
+```
+npm install
+npm run dev
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+## Configuration
+
+It requires the following environment variable
+
+```
+PUB_API_BASE=http://backend.url
+```
+
+## Pages
+
+- Main.tsx - /
+
+  The main page where you can create a new game or join an existing one.
+
+- Game.tsx - /game/:id
+  
+  The page where the game takes place.
+
+  This page will make a first request to load all game information and after that will connect to the server trough a websocket in order to communicate game movements.
+
+## Run the full game with docker?
+
+**[Chezz](https://github.com/sgatu/chezz)**

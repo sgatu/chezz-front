@@ -1,9 +1,10 @@
+import { Input } from "@/components/shadcn/ui/input";
 import { useToast } from "@/components/shadcn/ui/use-toast";
 import { RootStateType } from "@/reducers";
 import { CreateGameStatus, createGame/*, getGame*/ } from "@/reducers/gameReducer";
 import { ChosenColor } from "@/types";
 import { Button } from "@shadcn/ui/button"
-import { SendHorizontal, Users } from "lucide-react"
+import { SendHorizonal, SendHorizontal, Users } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -31,13 +32,28 @@ function MenuSelectColor({ onSelect, disabled = false }: MenuSelectColorProps) {
 }
 export default function Menu() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const createGameStatus: CreateGameStatus = useSelector<RootStateType, CreateGameStatus>((state) => state.game.createGame);
   const [selectedOption, setSelectedOption] = useState<'new' | 'join' | null>(null);
   const selectedOptionRef = useRef<GameOptions | null>(null);
   selectedOptionRef.current = selectedOption;
-  const navigate = useNavigate();
   const { toast } = useToast();
+  const refJoinGame = useRef<HTMLInputElement>(null);
 
+  const isNumeric = (game: string) => /^\d+$/.test(game);
+  function joinGame() {
+    if (refJoinGame.current) {
+      let game = refJoinGame.current.value;
+      if (!isNumeric(game)) {
+        const parts = game.split('/');
+        game = parts[game.length - 1];
+        if (!isNumeric(game))
+          return;
+
+      }
+      navigate(`/game/${game}`)
+    }
+  }
   useEffect(() => {
     document.addEventListener('keyup', (e) => {
       if (e.key === 'Escape' && selectedOptionRef.current !== null) {
@@ -89,7 +105,15 @@ export default function Menu() {
           </>
           }
           {selectedOption === "new" && <div><MenuSelectColor disabled={createGameStatus.inProgress} onSelect={(color) => onNewGameSelectColor(color)} /></div>}
-          {selectedOption === "join" && <div>Join game?</div>}
+          {
+            selectedOption === "join" &&
+            <div className="flex space-x-2">
+              <Input placeholder="Game Id" ref={refJoinGame} />
+              <Button className="flex p-[12px] justify-center border rounded-full border-gray-300 h-10 w-10" onClick={joinGame}>
+                <SendHorizonal width={50} height={50} />
+              </Button>
+            </div>
+          }
         </div>
       </div>
     </>

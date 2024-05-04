@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom"
 import useWebSocket from "react-use-websocket";
 import { WebSocketHook } from "react-use-websocket/dist/lib/types";
+import { Share2 } from "lucide-react";
 
 export default function Game() {
   const params = useParams<{ id: string }>();
@@ -23,11 +24,17 @@ export default function Game() {
   const socket: WebSocketHook = useWebSocket(wsUrl);
   const { toast } = useToast();
   const singleRequestRef = useRef(false); // used to avoid double api call on strictMode
-
   const onTableMove = (move: string) => {
     socket.sendMessage(move, false);
   }
-
+  const onShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast({
+      title: "Game copied to clipboard!",
+      variant: "default",
+      duration: 2500
+    });
+  }
   useEffect(() => {
     if (params.id && !singleRequestRef.current) {
       singleRequestRef.current = true;
@@ -73,8 +80,11 @@ export default function Game() {
         <div className="flex flex-row min-w-[750px] w-min justify-center">
           <div className="basis-52 bg-slate-300/[0.4] mr-5 rounded-sm p-2 items-center text-left text-gray-300 font-bold">
             <div>
-              <div className="text-sm">Game info</div>
-              <hr className="mb-5" />
+              <div className="flex">
+                <div className="text-sm flex-grow">Game info</div>
+                <div className="self-end"><Share2 className="stroke-[#2ec27e] hover:stroke-[#33d17a] hover:cursor-pointer" onClick={onShare} width={18} height={18} /></div>
+              </div>
+              <hr className="mb-5 mt-1" />
               <div className="flex items-center">
                 <div className="basis-3/4 mr-2">Your color</div>
                 <div className={clsx("basis-auto rounded-full w-5 h-5 border-2 border-slate-400", gameRelation === "black" ? "bg-black" : gameRelation === "white" ? "bg-white" : "bg-gray")}></div>
