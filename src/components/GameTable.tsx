@@ -95,7 +95,7 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
       gameStatus: {
         ...gameState.gameStatus,
         table: newTableStatus,
-        moves: [move.uci, ...gameState.gameStatus.moves],
+        moves: [...gameState.gameStatus.moves, move.uci],
         checkedPlayer: move.checkedPlayer,
         checkMate: move.isMate,
         playerTurn: ((gameState.gameStatus.moves.length + 1) % 2) as Player,
