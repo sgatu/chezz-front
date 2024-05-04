@@ -1,4 +1,6 @@
-# React + TypeScript + Vite
+![chessGame2](https://github.com/sgatu/chezz-front/assets/11692467/04406350-8231-445e-979e-e0f5ac07622e)
+# React
+ + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
