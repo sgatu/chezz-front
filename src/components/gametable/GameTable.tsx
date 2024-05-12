@@ -34,6 +34,7 @@ function GameTableComponent({ initialGame, gameRelation, onMove, onGameUpdate }:
     const newTableStatus = [...tableStatus];
     let capturedPieces = game.gameState.outTable;
     let hasCapturedPiece = false;
+    let uciMovement = move.uci;
     if (castling.isCastling) {
       newTableStatus[endIndex] = newTableStatus[initIndex];
       newTableStatus[initIndex] = null;
@@ -52,15 +53,21 @@ function GameTableComponent({ initialGame, gameRelation, onMove, onGameUpdate }:
         newTableStatus[endIndex]!.pieceType = charToPieceType(promotion);
       }
       newTableStatus[initIndex] = null;
+      if (move.enPassantCapture?.length > 0) {
+        uciMovement += "e.p";
+        const enPassantField = getIndexFromCoords(move.enPassantCapture);
+        capturedPieces.push(newTableStatus[enPassantField] as Piece);
+        hasCapturedPiece = true;
+        newTableStatus[enPassantField] = null;
+      }
     }
     const gameStatus = move.mateStatus as GameStatus;
-    console.log("new game status", gameStatus);
     const newGame = {
       ...game,
       gameState: {
         ...game.gameState,
         table: newTableStatus,
-        moves: [...game.gameState.moves, move.uci],
+        moves: [...game.gameState.moves, uciMovement],
         checkedPlayer: move.checkedPlayer,
         gameStatus: gameStatus,
         playerTurn: ((game.gameState.moves.length + 1) % 2) as Player,
@@ -68,7 +75,6 @@ function GameTableComponent({ initialGame, gameRelation, onMove, onGameUpdate }:
       }
     };
     setGame(newGame);
-    console.log(newGame);
     if (onGameUpdate) {
       onGameUpdate(newGame);
     }

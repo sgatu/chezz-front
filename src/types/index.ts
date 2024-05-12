@@ -15,6 +15,7 @@ export type ServerMove = {
   uci: string,
   checkedPlayer: Player,
   mateStatus: string,
+  enPassantCapture: string,
 }
 export type ServerMoveError = {
   type: typeof ServerMessageType.ERROR,
