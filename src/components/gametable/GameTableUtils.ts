@@ -1,13 +1,13 @@
 import Game, { Piece, PieceType, Player } from "@/lib/models/game";
 import { DraggableData } from "react-draggable";
 
-export function isCastlingMovement(gameState: Game, initIndex: number, endIndex: number): { isCastling: boolean, rookStart: number, rookEnd: number } {
+export function isCastlingMovement(game: Game, initIndex: number, endIndex: number): { isCastling: boolean, rookStart: number, rookEnd: number } {
   const defaultResponse = {
     rookStart: 0,
     rookEnd: 0,
     isCastling: false
   };
-  if (gameState.gameStatus.table[initIndex] === null || gameState.gameStatus.table[initIndex]?.pieceType !== PieceType.KING)
+  if (game.gameState.table[initIndex] === null || game.gameState.table[initIndex]?.pieceType !== PieceType.KING)
     return defaultResponse;
   if (initIndex === 4 && endIndex === 2) {
     return {

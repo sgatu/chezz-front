@@ -4,21 +4,21 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 const GAMESTORE = "game";
 
-export interface GetGameStatus {
+export interface GetGameState {
   inProgress: boolean,
   game?: Game,
   error?: string,
 }
 
-export interface CreateGameStatus {
+export interface CreateGameState {
   inProgress: boolean
   gameId?: string,
   error?: string
 }
 
 export interface gameState {
-  getGame: GetGameStatus,
-  createGame: CreateGameStatus,
+  getGame: GetGameState,
+  createGame: CreateGameState,
 }
 
 

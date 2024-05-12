@@ -1,7 +1,7 @@
 import { Input } from "@/components/shadcn/ui/input";
 import { useToast } from "@/components/shadcn/ui/use-toast";
 import { RootStateType } from "@/reducers";
-import { CreateGameStatus, createGame/*, getGame*/ } from "@/reducers/gameReducer";
+import { CreateGameState, createGame/*, getGame*/ } from "@/reducers/gameReducer";
 import { ChosenColor } from "@/types";
 import { Button } from "@shadcn/ui/button"
 import { SendHorizonal, SendHorizontal, Users } from "lucide-react"
@@ -33,7 +33,7 @@ function MenuSelectColor({ onSelect, disabled = false }: MenuSelectColorProps) {
 export default function Menu() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const createGameStatus: CreateGameStatus = useSelector<RootStateType, CreateGameStatus>((state) => state.game.createGame);
+  const createGameState: CreateGameState = useSelector<RootStateType, CreateGameState>((state) => state.game.createGame);
   const [selectedOption, setSelectedOption] = useState<'new' | 'join' | null>(null);
   const selectedOptionRef = useRef<GameOptions | null>(null);
   selectedOptionRef.current = selectedOption;
@@ -62,16 +62,16 @@ export default function Menu() {
     });
   }, []);
   useEffect(() => {
-    if (createGameStatus.error) {
+    if (createGameState.error) {
       toast({
         title: "Error",
         description: "Ha habido un error al crear el juego.",
         variant: "destructive"
       });
-    } else if (createGameStatus.gameId) {
-      navigate(`/game/${createGameStatus.gameId}`)
+    } else if (createGameState.gameId) {
+      navigate(`/game/${createGameState.gameId}`)
     }
-  }, [createGameStatus, navigate, toast]);
+  }, [createGameState, navigate, toast]);
 
   const onNewGameSelectColor = (color: ChosenColor) => {
     dispatch(createGame(color))
@@ -104,7 +104,7 @@ export default function Menu() {
             </div>
           </>
           }
-          {selectedOption === "new" && <div><MenuSelectColor disabled={createGameStatus.inProgress} onSelect={(color) => onNewGameSelectColor(color)} /></div>}
+          {selectedOption === "new" && <div><MenuSelectColor disabled={createGameState.inProgress} onSelect={(color) => onNewGameSelectColor(color)} /></div>}
           {
             selectedOption === "join" &&
             <div className="flex space-x-2">
