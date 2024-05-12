@@ -40,7 +40,17 @@ export class GameState {
   gameStatus: GameStatus;
   checkedPlayer: Player;
   castleRights: CastleRights;
-  constructor(table: (Piece | null)[], outTable: Piece[], moves: string[], playerTurn: Player, gameStatus: GameStatus, checkedPlayer: Player, castleRights: CastleRights) {
+  lastMovementWasAPJump: boolean;
+  constructor(
+    table: (Piece | null)[],
+    outTable: Piece[],
+    moves: string[],
+    playerTurn: Player,
+    gameStatus: GameStatus,
+    checkedPlayer: Player,
+    castleRights: CastleRights,
+    lastMovementWasAPJump: boolean,
+  ) {
     this.table = table;
     this.moves = moves;
     this.outTable = outTable;
@@ -48,6 +58,7 @@ export class GameState {
     this.gameStatus = gameStatus;
     this.checkedPlayer = checkedPlayer;
     this.castleRights = castleRights;
+    this.lastMovementWasAPJump = lastMovementWasAPJump;
   }
   private static pieceFromByte(b: number): Piece | null {
     if (b === 0) {
@@ -80,6 +91,8 @@ export class GameState {
         return "B";
       case 4:
         return "R";
+      case 5:
+        return "e.p";
       default:
         return "";
     }
@@ -124,6 +137,7 @@ export class GameState {
     let readingMoves = false;
     let checkedPlayer = Player.UNKNOWN_PLAYER;
     let gameStatus = GameStatus.PLAYING;
+    let lastMovementWasAPJump = false;
     let castleRights: CastleRights = {
       blackKingSide: false,
       blackQueenSide: false,
@@ -136,6 +150,10 @@ export class GameState {
     data.forEach((b, i) => {
       //first byte is defining the player turn
       if (i === 0) {
+        if ((b & 4) === 4) {
+          lastMovementWasAPJump = true;
+          b |= 3;
+        }
         playerTurn = b === 1 ? Player.BLACK_PLAYER : Player.WHITE_PLAYER;
         return;
       }
@@ -193,7 +211,7 @@ export class GameState {
         }
       }
     });
-    return new GameState(pieces, outPieces, movementHistory, playerTurn, gameStatus, checkedPlayer, castleRights);
+    return new GameState(pieces, outPieces, movementHistory, playerTurn, gameStatus, checkedPlayer, castleRights, lastMovementWasAPJump);
   }
 }
 
