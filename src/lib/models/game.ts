@@ -27,20 +27,25 @@ export type CastleRights = {
   whiteQueenSide: boolean,
   whiteKingSide: boolean
 }
-export class GameStatus {
+export enum GameStatus {
+  PLAYING = "",
+  CHECKMATE = "#",
+  STALEMATE = "-"
+}
+export class GameState {
   table: (Piece | null)[];
   moves: string[];
   outTable: Piece[];
   playerTurn: Player;
-  checkMate: boolean;
+  gameStatus: GameStatus;
   checkedPlayer: Player;
   castleRights: CastleRights;
-  constructor(table: (Piece | null)[], outTable: Piece[], moves: string[], playerTurn: Player, checkMate: boolean, checkedPlayer: Player, castleRights: CastleRights) {
+  constructor(table: (Piece | null)[], outTable: Piece[], moves: string[], playerTurn: Player, gameStatus: GameStatus, checkedPlayer: Player, castleRights: CastleRights) {
     this.table = table;
     this.moves = moves;
     this.outTable = outTable;
     this.playerTurn = playerTurn;
-    this.checkMate = checkMate;
+    this.gameStatus = gameStatus;
     this.checkedPlayer = checkedPlayer;
     this.castleRights = castleRights;
   }
@@ -80,14 +85,14 @@ export class GameStatus {
     }
   }
   private static bytesToMove(movementBytes: number[]): string | null {
-    const startCoord = GameStatus.positionToCoordinates(movementBytes[0]);
-    const endCoord = GameStatus.positionToCoordinates(movementBytes[1]);
+    const startCoord = GameState.positionToCoordinates(movementBytes[0]);
+    const endCoord = GameState.positionToCoordinates(movementBytes[1]);
     if (startCoord == null || endCoord == null) {
       return null;
     }
     let promotion = "";
     if (movementBytes[2]) {
-      promotion = GameStatus.promotionByteToTag(movementBytes[2]);
+      promotion = GameState.promotionByteToTag(movementBytes[2]);
     }
     return startCoord + endCoord + promotion;
   }
@@ -112,13 +117,13 @@ export class GameStatus {
   private static hasTag(b: number): boolean {
     return (b & 128) === 128;
   }
-  public static fromSerialized(data: Uint8Array): GameStatus {
+  public static fromSerialized(data: Uint8Array): GameState {
     const pieces: (Piece | null)[] = [];
     const outPieces: Piece[] = [];
     let playerTurn = Player.WHITE_PLAYER;
     let readingMoves = false;
     let checkedPlayer = Player.UNKNOWN_PLAYER;
-    let isCheckMate = false;
+    let gameStatus = GameStatus.PLAYING;
     let castleRights: CastleRights = {
       blackKingSide: false,
       blackQueenSide: false,
@@ -139,7 +144,11 @@ export class GameStatus {
         return;
       }
       if (i === 2) {
-        isCheckMate = b === 1;
+        if (b === 1) {
+          gameStatus = GameStatus.CHECKMATE;
+        } else if (b === 2) {
+          gameStatus = GameStatus.STALEMATE;
+        }
         return;
       }
       if (i === 3) {
@@ -148,7 +157,7 @@ export class GameStatus {
       }
       //next 64 bytes are used to define the game table status
       if (i < 68) {
-        pieces[i - 4] = b === 0 ? null : GameStatus.pieceFromByte(b);
+        pieces[i - 4] = b === 0 ? null : GameState.pieceFromByte(b);
         return;
       }
       // next we'll have to read the pieces that are out of the table untill we find a 0 byte
@@ -159,7 +168,7 @@ export class GameStatus {
       }
       //reading out of the table pieces
       if (b !== 0 && !readingMoves) {
-        const piece = GameStatus.pieceFromByte(b);
+        const piece = GameState.pieceFromByte(b);
         if (piece !== null) {
           outPieces.push(piece);
         }
@@ -176,7 +185,7 @@ export class GameStatus {
       bytesMovement[idx] = b;
       idx++;
       if (idx >= 2) {
-        const movement = GameStatus.bytesToMove(bytesMovement);
+        const movement = GameState.bytesToMove(bytesMovement);
         idx = 0;
         bytesMovement[2] = 0;
         if (movement !== null) {
@@ -184,7 +193,7 @@ export class GameStatus {
         }
       }
     });
-    return new GameStatus(pieces, outPieces, movementHistory, playerTurn, isCheckMate, checkedPlayer, castleRights);
+    return new GameState(pieces, outPieces, movementHistory, playerTurn, gameStatus, checkedPlayer, castleRights);
   }
 }
 
@@ -193,13 +202,13 @@ export default class Game {
   whitePlayer: string;
   blackPlayer: string;
   relation: relation;
-  gameStatus: GameStatus;
+  gameState: GameState;
 
-  constructor(id: string, whitePlayer: string, blackPlayer: string, relation: relation, gameStatus: GameStatus) {
+  constructor(id: string, whitePlayer: string, blackPlayer: string, relation: relation, gameState: GameState) {
     this.id = id;
     this.whitePlayer = whitePlayer;
     this.blackPlayer = blackPlayer;
     this.relation = relation;
-    this.gameStatus = gameStatus;
+    this.gameState = gameState;
   }
 }

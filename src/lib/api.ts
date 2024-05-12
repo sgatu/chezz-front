@@ -1,4 +1,4 @@
-import Game, { GameStatus } from "./models/game";
+import Game, { GameState } from "./models/game";
 import { default as ApiGame } from "./api/models/game.ts";
 import urlJoin from 'url-join';
 import { ChosenColor } from "@/types/index.ts";
@@ -38,7 +38,7 @@ export default class Api {
     }
     const resultGame = (await result.json()) as ApiGame;
     const boardData = this.base64ToArrayBuffer(resultGame.board);
-    return new Game(resultGame.gameId, resultGame.whitePlayer, resultGame.blackPlayer, resultGame.relation, GameStatus.fromSerialized(boardData));
+    return new Game(resultGame.gameId, resultGame.whitePlayer, resultGame.blackPlayer, resultGame.relation, GameState.fromSerialized(boardData));
   }
 
   public async createGame(color: ChosenColor): Promise<string> {

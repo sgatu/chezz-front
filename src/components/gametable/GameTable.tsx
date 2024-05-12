@@ -1,4 +1,4 @@
-import Game, { Piece, PieceType, Player } from "@/lib/models/game";
+import Game, { GameStatus, Piece, PieceType, Player } from "@/lib/models/game";
 import { PlayerGameRelation, ServerMove, charToPieceType, pieceTypeToChar } from "@/types";
 import clsx from "clsx";
 import { Ref, forwardRef, useImperativeHandle, useRef, useState } from "react";
@@ -8,7 +8,7 @@ import SelectPromotion from "./SelectPromotion";
 import { getHoveredSquare, isCastlingMovement, requiresPromotion } from "./GameTableUtils";
 
 export interface GameTableProps {
-  initialGameState: Game,
+  initialGame: Game,
   gameRelation: PlayerGameRelation,
   onMove?: (move: string) => void,
   onGameUpdate?: (updatedGame: Game) => void,
@@ -18,21 +18,21 @@ export type GameTableHandlers = {
 }
 
 
-function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpdate }: GameTableProps, ref: Ref<GameTableHandlers>) {
+function GameTableComponent({ initialGame, gameRelation, onMove, onGameUpdate }: GameTableProps, ref: Ref<GameTableHandlers>) {
 
-  const [gameState, setGameState] = useState<Game>(initialGameState);
+  const [game, setGame] = useState<Game>(initialGame);
   const [popoverInfo, setPopoverInfo] = useState<{ open: boolean, pos: { x: number, y: number } }>({
     open: false,
     pos: { x: 0, y: 0 },
   });
   const [lastMove, setLastMove] = useState<string | null>(null);
   function processMove(move: ServerMove) {
-    const tableStatus = gameState.gameStatus.table;
+    const tableStatus = game.gameState.table;
     const initIndex = getIndexFromCoords(move.uci.substring(0, 2));
     const endIndex = getIndexFromCoords(move.uci.substring(2, 4));
-    const castling = isCastlingMovement(gameState, initIndex, endIndex);
+    const castling = isCastlingMovement(game, initIndex, endIndex);
     const newTableStatus = [...tableStatus];
-    let capturedPieces = gameState.gameStatus.outTable;
+    let capturedPieces = game.gameState.outTable;
     let hasCapturedPiece = false;
     if (castling.isCastling) {
       newTableStatus[endIndex] = newTableStatus[initIndex];
@@ -40,7 +40,7 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
       newTableStatus[castling.rookEnd] = newTableStatus[castling.rookStart]
       newTableStatus[castling.rookStart] = null;
     } else {
-      capturedPieces = [...gameState.gameStatus.outTable];
+      capturedPieces = [...game.gameState.outTable];
       const promotion = move.uci.length === 5 && ["Q", "R", "B", "N"].includes(move.uci[4].toUpperCase()) ?
         move.uci[4].toUpperCase() : null;
       if (newTableStatus[endIndex] !== null) {
@@ -53,21 +53,24 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
       }
       newTableStatus[initIndex] = null;
     }
-    const newGameState = {
-      ...gameState,
-      gameStatus: {
-        ...gameState.gameStatus,
+    const gameStatus = move.mateStatus as GameStatus;
+    console.log("new game status", gameStatus);
+    const newGame = {
+      ...game,
+      gameState: {
+        ...game.gameState,
         table: newTableStatus,
-        moves: [...gameState.gameStatus.moves, move.uci],
+        moves: [...game.gameState.moves, move.uci],
         checkedPlayer: move.checkedPlayer,
-        checkMate: move.isMate,
-        playerTurn: ((gameState.gameStatus.moves.length + 1) % 2) as Player,
-        outTable: hasCapturedPiece ? capturedPieces : gameState.gameStatus.outTable,
+        gameStatus: gameStatus,
+        playerTurn: ((game.gameState.moves.length + 1) % 2) as Player,
+        outTable: hasCapturedPiece ? capturedPieces : game.gameState.outTable,
       }
     };
-    setGameState(newGameState);
+    setGame(newGame);
+    console.log(newGame);
     if (onGameUpdate) {
-      onGameUpdate(newGameState);
+      onGameUpdate(newGame);
     }
   }
 
@@ -77,8 +80,8 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
 
   const isDraggable = (pieceOwner: Player): boolean => {
     return gameRelation !== "observer" &&
-      (pieceOwner === Player.BLACK_PLAYER && gameRelation === "black" && gameState.gameStatus.playerTurn === Player.BLACK_PLAYER) ||
-      (pieceOwner === Player.WHITE_PLAYER && gameRelation === "white" && gameState.gameStatus.playerTurn === Player.WHITE_PLAYER);
+      (pieceOwner === Player.BLACK_PLAYER && gameRelation === "black" && game.gameState.playerTurn === Player.BLACK_PLAYER) ||
+      (pieceOwner === Player.WHITE_PLAYER && gameRelation === "white" && game.gameState.playerTurn === Player.WHITE_PLAYER);
   }
   function getNumeration(): React.JSX.Element[] {
     let i = 8;
@@ -115,7 +118,7 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
       setLastMove(startPos + endPos);
       const initIndex = getIndexFromCoords(startPos);
       const endIndex = getIndexFromCoords(endPos);
-      const initPiece = gameState.gameStatus.table[initIndex];
+      const initPiece = game.gameState.table[initIndex];
       if (requiresPromotion(initPiece, endIndex)) {
         setPopoverInfo({
           open: true,
@@ -162,7 +165,7 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
   }
   const isPieceChecked = (p: Piece | null): boolean => {
     if (p?.pieceType !== PieceType.KING) return false;
-    return (gameState.gameStatus.checkedPlayer === p?.player);
+    return (game.gameState.checkedPlayer === p?.player);
   }
   return (
     <>
@@ -171,7 +174,7 @@ function GameTableComponent({ initialGameState, gameRelation, onMove, onGameUpda
           {getNumeration()}
         </div>
         <div className="m-2 grid grid-cols-8" key={tableKey} ref={tableRef}>
-          {gameState.gameStatus.table.map((p, i) => {
+          {game.gameState.table.map((p, i) => {
 
             const coords = getCoordsFromIndex(i);
             const border = (isPieceChecked(p) ? "border-rose-500 border-2" : (focusedPosition === coords ? "border-sky-500 border-2" : "border"));
